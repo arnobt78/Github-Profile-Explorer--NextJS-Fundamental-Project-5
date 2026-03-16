@@ -15,10 +15,10 @@ export function ExplorerPage() {
   return (
     <main className="mx-auto max-w-7xl px-2 py-10 lg:px-0 lg:py-20">
       <section className="mb-12 flex flex-col items-center justify-center text-center">
-        <h1 className="mb-4 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent drop-shadow-lg sm:text-5xl">
+        <h1 className="mb-4 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent drop-shadow-lg sm:text-4xl">
           Search GitHub User Explorer
         </h1>
-        <p className="mb-4 max-w-2xl text-muted-foreground sm:text-xl md:text-base">
+        <p className="mb-4 text-muted-foreground sm:text-xl md:text-base">
           Effortlessly search and visualize GitHub user profiles, repositories,
           and language stats with interactive charts.
           <br className="hidden sm:block" />

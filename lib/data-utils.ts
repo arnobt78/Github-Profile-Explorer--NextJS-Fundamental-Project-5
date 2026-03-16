@@ -2,7 +2,7 @@ import type { Repository } from "@/types";
 
 /**
  * Data helpers for chart series.
- * Top 5 most forked repos — used by ForkedRepos chart.
+ * Top 10 most forked repos — used by ForkedRepos chart.
  */
 export function calculateMostForkedRepos(
   repositories: Repository[]
@@ -11,11 +11,11 @@ export function calculateMostForkedRepos(
   return repositories
     .map((repo) => ({ repo: repo.name, count: repo.forkCount }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+    .slice(0, 10);
 }
 
 /**
- * Top 5 most starred repositories.
+ * Top 10 most starred repositories.
  * Used for the "Popular Repos" chart.
  */
 export function calculateMostStarredRepos(
@@ -25,11 +25,11 @@ export function calculateMostStarredRepos(
   return repositories
     .map((repo) => ({ repo: repo.name, stars: repo.stargazerCount }))
     .sort((a, b) => b.stars - a.stars)
-    .slice(0, 5);
+    .slice(0, 10);
 }
 
 /**
- * Top 5 most used languages across all repositories (by repo count).
+ * Top 10 most used languages across all repositories (by repo count).
  * Used for the "Used Languages" chart.
  */
 export function calculatePopularLanguages(
@@ -47,6 +47,6 @@ export function calculatePopularLanguages(
   if (Object.keys(languageMap).length === 0) return [];
   return Object.entries(languageMap)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
+    .slice(0, 10)
     .map(([language, count]) => ({ language, count }));
 }
