@@ -12,8 +12,9 @@ A modern, feature-rich web application to search and explore GitHub user profile
 
 - **Live Demo:** [https://github-dev-explorer.vercel.app/](https://github-dev-explorer.vercel.app/)
 
-![Screenshot 2025-06-15 at 22 00 23](https://github.com/user-attachments/assets/72515557-bec1-42ab-a420-05d79ac03b77)
-![Screenshot 2025-06-15 at 21 29 04](https://github.com/user-attachments/assets/00ff6fa3-6cd5-4888-b5dd-4fda0512bce2)
+![Image 1](https://github.com/user-attachments/assets/edbee62d-bbcc-4f9e-b7fe-430cbf75200a)
+![Image 2](https://github.com/user-attachments/assets/139c5426-06ea-4d5a-86f5-64f6e6df66d9)
+![Image 3](https://github.com/user-attachments/assets/7b6152e1-99b6-4947-98b4-4ec2a0c9c1fa)
 
 ## Table of Contents
 
