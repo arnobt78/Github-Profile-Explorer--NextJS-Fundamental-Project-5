@@ -13,7 +13,7 @@ export function ExplorerPage() {
   const [userName, setUserName] = useState("quincylarson");
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-8 sm:py-20">
+    <main className="mx-auto max-w-7xl px-2 py-10 lg:px-0 lg:py-20">
       <section className="mb-12 flex flex-col items-center justify-center text-center">
         <h1 className="mb-4 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent drop-shadow-lg sm:text-5xl">
           Search GitHub User Explorer

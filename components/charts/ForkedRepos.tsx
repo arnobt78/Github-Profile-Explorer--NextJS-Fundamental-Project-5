@@ -25,7 +25,7 @@ export function ForkedRepos({ repositories }: ForkedReposProps) {
   } satisfies ChartConfig;
 
   return (
-    <div>
+    <div className="w-full">
       <h2 className="mb-4 text-center text-2xl font-semibold">Forked Repos</h2>
       <ChartContainer config={chartConfig} className="h-[100px] w-full">
         <BarChart accessibilityLayer data={mostForkedRepos}>

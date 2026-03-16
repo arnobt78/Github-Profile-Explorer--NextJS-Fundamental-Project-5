@@ -25,7 +25,7 @@ export function PopularRepos({ repositories }: PopularReposProps) {
   } satisfies ChartConfig;
 
   return (
-    <div>
+    <div className="w-full">
       <h2 className="mb-4 text-center text-2xl font-semibold">
         Popular Repos
       </h2>

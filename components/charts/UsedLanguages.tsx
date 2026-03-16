@@ -25,7 +25,7 @@ export function UsedLanguages({ repositories }: UsedLanguagesProps) {
   } satisfies ChartConfig;
 
   return (
-    <div>
+    <div className="w-full">
       <h2 className="mb-4 text-center text-2xl font-semibold">
         Used Languages
       </h2>

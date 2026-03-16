@@ -2,7 +2,7 @@
 
 A modern, feature-rich web application to search and explore GitHub users using the GitHub GraphQL API. Built with React, Vite, TypeScript, Tailwind CSS, Apollo Client, and shadcn/ui, this project demonstrates advanced state management, data visualization, and a clean, responsive UI.
 
-**Live Online:** <https://search-github-users-explorer.netlify.app/>
+- **Live Demo:** [https://github-dev-explorer.vercel.app/](https://github-dev-explorer.vercel.app/)
 
 ![Screenshot 2025-06-15 at 22 00 23](https://github.com/user-attachments/assets/72515557-bec1-42ab-a420-05d79ac03b77)
 ![Screenshot 2025-06-15 at 21 29 04](https://github.com/user-attachments/assets/00ff6fa3-6cd5-4888-b5dd-4fda0512bce2)
@@ -99,7 +99,7 @@ npm install
 - Add your GitHub personal access token:
 
 ```env
-VITE_GITHUB_TOKEN=YOUR_TOKEN_HERE
+NEXT_PUBLIC_GITHUB_TOKEN=YOUR_TOKEN_HERE
 ```
 
 > **Note:** [How to create a GitHub personal access token](https://github.com/settings/tokens)
@@ -116,7 +116,7 @@ The app will be available at `http://localhost:5173` (or as shown in your termin
 
 ## Environment Variables
 
-- `VITE_GITHUB_TOKEN`: Your GitHub personal access token (required for API access)
+- `NEXT_PUBLIC_GITHUB_TOKEN`: Your GitHub personal access token (required for API access)
 
 **Note:** Make sure you enable (tick) at least these two fields while generating your GitHub API Token (Classic) for deploying on Netlify or Vercel or other server.
 

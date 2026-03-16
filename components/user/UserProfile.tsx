@@ -48,10 +48,16 @@ export function UserProfile({ userName }: UserProfileProps) {
         gists={gists.totalCount}
       />
       {repositories.totalCount > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <UsedLanguages repositories={repositories.nodes} />
-          <PopularRepos repositories={repositories.nodes} />
-          <ForkedRepos repositories={repositories.nodes} />
+        <div className="flex w-full flex-col gap-6">
+          <div className="w-full">
+            <UsedLanguages repositories={repositories.nodes} />
+          </div>
+          <div className="w-full">
+            <PopularRepos repositories={repositories.nodes} />
+          </div>
+          <div className="w-full">
+            <ForkedRepos repositories={repositories.nodes} />
+          </div>
         </div>
       )}
     </div>
