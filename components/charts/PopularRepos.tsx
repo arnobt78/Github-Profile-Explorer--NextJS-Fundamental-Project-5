@@ -2,7 +2,7 @@
 
 import type { Repository } from "@/types";
 import { calculateMostStarredRepos } from "@/lib/data-utils";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
 import {
   type ChartConfig,
   ChartContainer,
@@ -26,11 +26,14 @@ export function PopularRepos({ repositories }: PopularReposProps) {
 
   return (
     <div className="w-full">
-      <h2 className="mb-4 text-center text-2xl font-semibold">
+      <h2 className="mb-1 text-center text-2xl font-semibold">
         Popular Repos
       </h2>
-      <ChartContainer config={chartConfig} className="h-[100px] w-full">
-        <BarChart accessibilityLayer data={popularRepos}>
+      <p className="mb-4 text-center text-sm text-muted-foreground">
+        Repositories with the most stars
+      </p>
+      <ChartContainer config={chartConfig} className="h-[160px] w-full pt-4">
+        <BarChart accessibilityLayer data={popularRepos} margin={{ top: 24, right: 8, left: 8, bottom: 0 }}>
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="repo"
@@ -40,7 +43,9 @@ export function PopularRepos({ repositories }: PopularReposProps) {
           />
           <YAxis dataKey="stars" />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="stars" fill="var(--color-repo)" radius={4} />
+          <Bar dataKey="stars" fill="var(--color-repo)" radius={4}>
+            <LabelList dataKey="stars" position="top" className="fill-foreground" />
+          </Bar>
         </BarChart>
       </ChartContainer>
     </div>

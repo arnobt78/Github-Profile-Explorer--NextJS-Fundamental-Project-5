@@ -2,7 +2,7 @@
 
 import type { Repository } from "@/types";
 import { calculateMostForkedRepos } from "@/lib/data-utils";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
 import {
   type ChartConfig,
   ChartContainer,
@@ -26,9 +26,12 @@ export function ForkedRepos({ repositories }: ForkedReposProps) {
 
   return (
     <div className="w-full">
-      <h2 className="mb-4 text-center text-2xl font-semibold">Forked Repos</h2>
-      <ChartContainer config={chartConfig} className="h-[100px] w-full">
-        <BarChart accessibilityLayer data={mostForkedRepos}>
+      <h2 className="mb-1 text-center text-2xl font-semibold">Forked Repos</h2>
+      <p className="mb-4 text-center text-sm text-muted-foreground">
+        Repositories with the most forks
+      </p>
+      <ChartContainer config={chartConfig} className="h-[160px] w-full pt-4">
+        <BarChart accessibilityLayer data={mostForkedRepos} margin={{ top: 24, right: 8, left: 8, bottom: 0 }}>
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="repo"
@@ -39,7 +42,9 @@ export function ForkedRepos({ repositories }: ForkedReposProps) {
           />
           <YAxis dataKey="count" />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="count" fill="var(--color-repo)" radius={4} />
+          <Bar dataKey="count" fill="var(--color-repo)" radius={4}>
+            <LabelList dataKey="count" position="top" className="fill-foreground" />
+          </Bar>
         </BarChart>
       </ChartContainer>
     </div>

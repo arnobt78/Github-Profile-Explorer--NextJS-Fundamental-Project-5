@@ -4,10 +4,16 @@ import { gql } from "@apollo/client";
 export const GET_USER = gql`
   query ($login: String!) {
     user(login: $login) {
+      login
       name
       avatarUrl
       bio
       url
+      company
+      location
+      websiteUrl
+      createdAt
+      twitterUsername
       repositories(first: 100) {
         totalCount
         nodes {
@@ -15,6 +21,7 @@ export const GET_USER = gql`
           description
           stargazerCount
           forkCount
+          isFork
           url
           languages(first: 5) {
             edges {
@@ -22,6 +29,13 @@ export const GET_USER = gql`
                 name
               }
               size
+            }
+          }
+          repositoryTopics(first: 8) {
+            nodes {
+              topic {
+                name
+              }
             }
           }
         }

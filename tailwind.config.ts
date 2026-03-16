@@ -8,6 +8,13 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      maxWidth: {
+        "9xl": "96rem",
+      },
+      fontFamily: {
+        sans: ["var(--font-outfit)", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "monospace"],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

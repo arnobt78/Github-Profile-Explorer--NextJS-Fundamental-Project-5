@@ -1,22 +1,20 @@
 "use client";
 
-/**
- * Search form — controlled input + submit.
- * Syncs local state (text) with parent (userName) on submit; shows toast on empty input.
- */
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchHistory } from "@/hooks/useSearchHistory";
 
 type SearchFormProps = {
   userName: string;
-  setUserName: React.Dispatch<React.SetStateAction<string>>;
+  setUserName: (username: string) => void;
 };
 
 export function SearchForm({ userName, setUserName }: SearchFormProps) {
   const { toast } = useToast();
+  const { addSearch } = useSearchHistory();
   const [text, setText] = useState(userName);
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
@@ -27,13 +25,15 @@ export function SearchForm({ userName, setUserName }: SearchFormProps) {
       });
       return;
     }
-    setUserName(text.trim());
+    const trimmed = text.trim();
+    addSearch(trimmed);
+    setUserName(trimmed);
   };
 
   return (
     <form
       onSubmit={handleSearch}
-      className="mb-8 flex w-full items-center gap-x-2 lg:w-1/3"
+      className="flex w-full items-center gap-x-2"
     >
       <Label htmlFor="search" className="sr-only">
         Search
@@ -44,9 +44,9 @@ export function SearchForm({ userName, setUserName }: SearchFormProps) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Search Github Users... "
-        className="flex-grow bg-background"
+        className="flex-grow bg-background transition-none"
       />
-      <Button type="submit">Search</Button>
+      <Button type="submit" className="transition-none">Search</Button>
     </form>
   );
 }
