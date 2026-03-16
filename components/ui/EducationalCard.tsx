@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Card for "What you'll learn" section: icon, title, description. Framer motion fade-in with optional delay.
+ * Used in ExplorerPage with learnItems (React, GraphQL, Next.js, Tailwind, etc.).
+ */
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 

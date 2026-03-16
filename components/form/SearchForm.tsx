@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Search form: controlled input + Search button. On submit, validates, adds to recent
+ * history, and updates global userName (SearchContext) so UserProfile refetches.
+ */
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +21,7 @@ export function SearchForm({ userName, setUserName }: SearchFormProps) {
   const { addSearch } = useSearchHistory();
   const [text, setText] = useState(userName);
 
+  /** Validate, add to history, then update global username to trigger profile fetch. */
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (text.trim() === "") {

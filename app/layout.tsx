@@ -1,3 +1,7 @@
+/**
+ * Root layout — wraps every page. Defines fonts, SEO metadata, theme script, and global structure.
+ * Header and Footer are always visible; {children} is the current page (here, ExplorerPage).
+ */
 import type { Metadata } from "next";
 import { Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -5,6 +9,7 @@ import { Providers } from "@/components/provider/Providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
+/** Fonts exposed as CSS variables for use in Tailwind (--font-outfit, --font-jetbrains-mono). */
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
@@ -17,8 +22,10 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+/** Base URL for canonical and Open Graph links (used in metadata). */
 const siteUrl = "https://github-dev-explorer.vercel.app";
 
+/** SEO metadata: title, description, keywords, Open Graph, Twitter, icons, robots. */
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -93,6 +100,10 @@ export const metadata: Metadata = {
   referrer: "origin-when-cross-origin",
 };
 
+/**
+ * Inline script runs before React hydrates: reads theme from localStorage (or system preference)
+ * and applies "light" or "dark" class on <html>. Prevents flash of wrong theme on load.
+ */
 const themeScript = `
 (function(){
   var k='github-explorer-theme';
@@ -105,6 +116,7 @@ const themeScript = `
 })();
 `;
 
+/** Root layout: html/body, fonts, metadata, theme script, Providers, Header, children, Footer. */
 export default function RootLayout({
   children,
 }: Readonly<{

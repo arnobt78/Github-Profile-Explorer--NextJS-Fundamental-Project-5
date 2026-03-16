@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * User profile section: fetches GitHub user via GET_USER (Apollo useQuery), then renders
+ * UserCard, StatsContainer, RepoList, and three charts. Handles loading, error, and not-found.
+ */
 import { motion } from "framer-motion";
 import { useQuery } from "@apollo/client";
 import { GET_USER } from "@/lib/queries";
@@ -17,6 +21,7 @@ type UserProfileProps = {
   userName: string;
 };
 
+/** Framer stagger: children animate with 0.08s delay between them. */
 const stagger = {
   hidden: {},
   visible: {

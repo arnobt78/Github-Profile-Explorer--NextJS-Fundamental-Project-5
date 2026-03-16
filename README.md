@@ -1,6 +1,14 @@
 # GitHub Profile Explorer - Next.js, React, TypeScript, Apollo Client, GraphQL, TailwindCSS Fundamental Project 5
 
-A modern, feature-rich web application to search and explore GitHub users using the GitHub GraphQL API. Built with React, Vite, TypeScript, Tailwind CSS, Apollo Client, and shadcn/ui, this project demonstrates advanced state management, data visualization, and a clean, responsive UI.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-blue)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
+[![Apollo Client](https://img.shields.io/badge/Apollo_Client-3.11-purple)](https://www.apollographql.com/docs/react/)
+[![GraphQL](https://img.shields.io/badge/GraphQL-16.9-pink)](https://graphql.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC)](https://tailwindcss.com/)
+
+A modern, feature-rich web application to search and explore GitHub user profiles using the GitHub GraphQL API. Built with Next.js App Router, React, TypeScript, Tailwind CSS, Apollo Client, and shadcn/ui, this project demonstrates advanced state management, data visualization, responsive design, and a clean UI—ideal for learning full-stack web development, GraphQL, and modern React patterns.
 
 - **Live Demo:** [https://github-dev-explorer.vercel.app/](https://github-dev-explorer.vercel.app/)
 
@@ -14,10 +22,11 @@ A modern, feature-rich web application to search and explore GitHub users using 
 - [Technology Stack](#technology-stack)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [Usage Guide](#usage-guide)
-- [Key Functionalities](#key-functionalities)
+- [Routes & API](#routes--api)
+- [Components & Functionalities](#components--functionalities)
 - [How GraphQL & Apollo Client Work](#how-graphql--apollo-client-work)
-- [Detailed Project Walkthrough](#detailed-project-walkthrough)
+- [Libraries & Dependencies](#libraries--dependencies)
+- [Reusing Components](#reusing-components)
 - [Keywords](#keywords)
 - [License](#license)
 
@@ -25,42 +34,57 @@ A modern, feature-rich web application to search and explore GitHub users using 
 
 ## Features
 
-- **Search GitHub Users** by username using the GitHub GraphQL API
-- **User Profile**: View avatar, name, bio, and profile link
-- **Statistics**: See total repositories, followers, following, and gists
-- **Charts**: Visualize most used languages, most popular repos, and most forked repos
-- **Responsive UI**: Built with Tailwind CSS and shadcn/ui for a modern look
-- **Toast Notifications**: User feedback for invalid input and errors
-- **Loading Skeletons**: Smooth loading experience
-- **TypeScript**: Type-safe codebase
+- **Search GitHub Users** — Search by username using the GitHub GraphQL API
+- **User Profile** — View avatar, name, bio, company, location, website, and profile link
+- **Statistics** — Total repositories, followers, following, and gists in card layout
+- **Repository List** — Filterable and sortable repo cards with language/topic badges
+- **Charts** — Interactive bar charts: most used languages, popular repos, forked repos
+- **Theme Toggle** — Light/dark mode with persistent preference
+- **Recent Searches** — Quick access to previous searches in the navbar
+- **Toast Notifications** — User feedback for invalid input and errors
+- **Loading Skeletons** — Smooth loading experience
+- **Responsive UI** — Mobile, tablet, and desktop support
+- **TypeScript** — Type-safe codebase
 
 ---
 
 ## Project Structure
 
 ```bash
+├── app/
+│   ├── layout.tsx          # Root layout, metadata, fonts, theme script
+│   ├── page.tsx            # Home page (renders ExplorerPage)
+│   └── globals.css         # Global styles, CSS variables, animations
+├── components/
+│   ├── charts/             # UsedLanguages, PopularRepos, ForkedRepos
+│   ├── form/               # SearchForm, RecentSearches
+│   ├── layout/             # Header, Footer
+│   ├── pages/              # ExplorerPage (main landing + search)
+│   ├── provider/            # Providers (Apollo, Theme, Search, History)
+│   ├── ui/                 # shadcn/ui: button, card, chart, input, select, skeleton, toast, etc.
+│   └── user/               # UserCard, UserProfile, RepoList, StatsContainer, Loading
+├── context/
+│   ├── SearchContext.tsx       # Global search username state
+│   ├── SearchHistoryContext.tsx # Recent searches (localStorage)
+│   └── ThemeContext.tsx        # Light/dark theme (localStorage)
+├── hooks/
+│   ├── use-toast.ts        # Toast notifications
+│   └── useSearchHistory.ts # Search history hook
+├── lib/
+│   ├── apollo-client.ts    # Apollo Client setup for GitHub GraphQL
+│   ├── data-utils.ts      # Sort/filter helpers, chart data
+│   ├── queries.ts         # GraphQL queries
+│   └── utils.ts           # cn() and utilities
+├── types/
+│   └── index.ts           # User, Repository, Language types
 ├── public/
-├── src/
-│   ├── apolloClient.ts         # Apollo Client setup
-│   ├── App.tsx                 # Main app component
-│   ├── main.tsx                # Entry point
-│   ├── queries.ts              # GraphQL queries
-│   ├── types.ts                # TypeScript types
-│   ├── utils.ts                # Data transformation utilities
-│   ├── assets/                 # Static assets
-│   ├── components/
-│   │   ├── charts/             # Chart components (UsedLanguages, PopularRepos, ForkedRepos)
-│   │   ├── form/               # SearchForm
-│   │   ├── ui/                 # shadcn/ui components (button, card, chart, input, label, skeleton, toast, toaster)
-│   │   └── user/               # UserCard, UserProfile, StatsCard, StatsContainer, Loading
-│   ├── hooks/                  # Custom hooks (use-toast)
-│   └── lib/                    # Shared utilities
-├── .env.local                  # Environment variables (GitHub token)
+│   ├── favicon.ico
+│   └── logo.svg
+├── .env.example           # Environment variable template
+├── .env.local             # Your secrets (gitignored)
 ├── package.json
-├── tailwind.config.js
-├── postcss.config.js
-├── vite.config.ts
-├── tsconfig.json
+├── tailwind.config.ts
+├── next.config.ts
 └── README.md
 ```
 
@@ -68,13 +92,18 @@ A modern, feature-rich web application to search and explore GitHub users using 
 
 ## Technology Stack
 
-- **React** (with Vite)
-- **TypeScript**
-- **Tailwind CSS**
-- **shadcn/ui** (UI primitives)
-- **Apollo Client** (GraphQL)
-- **Recharts** (Charts)
-- **GitHub GraphQL API**
+| Technology             | Purpose                            |
+| ---------------------- | ---------------------------------- |
+| **Next.js 16**         | App Router, SSR, routing, metadata |
+| **React 19**           | UI components, hooks               |
+| **TypeScript 5.6**     | Type safety                        |
+| **Apollo Client 3.11** | GraphQL client, caching            |
+| **GraphQL 16.9**       | Query language                     |
+| **Tailwind CSS 3.4**   | Utility-first styling              |
+| **shadcn/ui**          | Accessible UI primitives (Radix)   |
+| **Recharts**           | Bar charts                         |
+| **Framer Motion**      | Animations                         |
+| **Lucide React**       | Icons                              |
 
 ---
 
@@ -93,16 +122,17 @@ cd 21-search-github-users-graphql
 npm install
 ```
 
-### 3. Set up environment variables
+### 3. Environment variables (optional)
 
-- Create a `.env.local` file in the root directory
-- Add your GitHub personal access token:
+The app can run **without** a GitHub token for basic exploration, but the GitHub GraphQL API has strict rate limits for unauthenticated requests (60 requests/hour). For production or heavy use, a token is **recommended**.
+
+Create `.env.local` in the project root:
 
 ```env
-NEXT_PUBLIC_GITHUB_TOKEN=YOUR_TOKEN_HERE
+NEXT_PUBLIC_GITHUB_TOKEN=your-github-personal-access-token
 ```
 
-> **Note:** [How to create a GitHub personal access token](https://github.com/settings/tokens)
+See [Environment Variables](#environment-variables) for how to create a token.
 
 ### 4. Start the development server
 
@@ -110,140 +140,276 @@ NEXT_PUBLIC_GITHUB_TOKEN=YOUR_TOKEN_HERE
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173` (or as shown in your terminal).
+The app will be available at `http://localhost:3000`.
+
+### 5. Build for production
+
+```bash
+npm run build
+npm start
+```
+
+### 6. Lint
+
+```bash
+npm run lint
+```
 
 ---
 
 ## Environment Variables
 
-- `NEXT_PUBLIC_GITHUB_TOKEN`: Your GitHub personal access token (required for API access)
+| Variable                   | Required     | Description                                  |
+| -------------------------- | ------------ | -------------------------------------------- |
+| `NEXT_PUBLIC_GITHUB_TOKEN` | Optional\*\* | GitHub Personal Access Token for GraphQL API |
 
-**Note:** Make sure you enable (tick) at least these two fields while generating your GitHub API Token (Classic) for deploying on Netlify or Vercel or other server.
+**Without a token:** The app works but is subject to GitHub's unauthenticated rate limit (60 requests/hour). For learning and light use, you may not need it.
 
-read:user (for reading user profile info)
+**To create a token:**
 
-public_repo (for reading public repository info)
+1. Go to [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
+2. Generate a new token (classic)
+3. Enable at least: `read:user`, `public_repo`
+4. Copy the token and add it to `.env.local`
+
+Example `.env.local`:
+
+```env
+NEXT_PUBLIC_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
 
 ---
 
-## Usage Guide
+## Routes & API
 
-1. **Search for a user**: Enter a GitHub username in the search bar and submit.
-2. **View profile**: See the user's avatar, name, bio, and a link to their GitHub profile.
-3. **Explore stats**: View total repositories, followers, following, and gists.
-4. **Visualize data**: Check out charts for most used languages, most popular repos, and most forked repos.
-5. **Error handling**: Invalid usernames or API errors are shown via toast notifications.
+### Routes
+
+| Route | Description                                    |
+| ----- | ---------------------------------------------- |
+| `/`   | Home page — hero, search, user profile, charts |
+
+### API (No Backend)
+
+This project has **no custom backend**. It talks directly to GitHub's public GraphQL API:
+
+- **Endpoint:** `https://api.github.com/graphql`
+- **Method:** POST (GraphQL)
+- **Auth:** Optional Bearer token via `NEXT_PUBLIC_GITHUB_TOKEN`
+
+The app uses the `user` query from GitHub's schema to fetch profile, repositories, followers, following, and gists.
 
 ---
 
-## Key Functionalities
+## Components & Functionalities
 
-- **SearchForm**: Handles user input and search submission with validation and toast feedback.
-- **UserProfile**: Fetches and displays user data using Apollo Client and GraphQL.
-- **UserCard**: Shows avatar, name, bio, and profile link.
-- **StatsContainer & StatsCard**: Display user statistics.
-- **Charts**: Visualize language usage, popular repos, and forked repos using Recharts.
-- **Loading**: Skeleton UI for loading states.
-- **Toast**: User feedback for errors and actions.
+### ExplorerPage
+
+Main landing page with hero section, streaming animated text, search form, and user profile section.
+
+**Reuse:** Import and render where you need the full explorer UI.
+
+---
+
+### SearchForm
+
+Controlled input with validation and toast feedback. Submits username to `SearchContext`.
+
+```tsx
+import { SearchForm } from "@/components/form/SearchForm";
+
+<SearchForm userName={userName} setUserName={setUserName} />;
+```
+
+---
+
+### RecentSearches
+
+Displays recent usernames as clickable pills. Uses `SearchHistoryContext`.
+
+```tsx
+import { RecentSearches } from "@/components/form/RecentSearches";
+
+<RecentSearches onSelect={(username) => setUserName(username)} />;
+```
+
+---
+
+### UserProfile
+
+Fetches user data via Apollo `useQuery`, displays profile, stats, repo list, and charts.
+
+```tsx
+import { UserProfile } from "@/components/user/UserProfile";
+
+<UserProfile userName={userName} />;
+```
+
+---
+
+### RepoList
+
+Displays repos with filters (sort, language, type). Shows language and topic badges.
+
+**Reuse:** Pass `repositories` and `totalCount` from your GraphQL response.
+
+---
+
+### Charts (UsedLanguages, PopularRepos, ForkedRepos)
+
+Bar charts built with Recharts. Each has a subtitle and label values.
+
+```tsx
+import { UsedLanguages } from "@/components/charts/UsedLanguages";
+
+<UsedLanguages repositories={repositories} />;
+```
+
+---
+
+### ThemeToggle
+
+Light/dark mode toggle. Uses `ThemeContext` and persists to `localStorage`.
+
+---
+
+### How Data Flows
+
+1. User enters a username in **SearchForm**
+2. **SearchForm** validates and calls `setUserName` from **SearchContext**
+3. **UserProfile** receives `userName`, runs `useQuery(GET_USER, { variables: { login: userName } })`
+4. **Apollo Client** sends the query to GitHub GraphQL API
+5. Data is cached; loading and error states are handled
+6. **UserProfile** renders **UserCard**, **StatsContainer**, **RepoList**, and charts
+7. **Data utils** (`lib/data-utils.ts`) transform repo data for charts and filters
 
 ---
 
 ## How GraphQL & Apollo Client Work
 
-### What is GraphQL?
+### GraphQL
 
-GraphQL is a query language for APIs and a runtime for executing those queries. Unlike REST, which exposes multiple endpoints, GraphQL exposes a single endpoint and allows clients to specify exactly what data they need. This reduces over-fetching and under-fetching of data.
+GraphQL is a query language for APIs. Unlike REST, you specify exactly which fields you need in one request.
 
-- **Schema**: Defines the types and structure of data available.
-- **Query**: Request to fetch data (like GET in REST).
-- **Mutation**: Request to modify data (like POST/PUT/DELETE in REST).
-- **Fields & Arguments**: Specify exactly what data and filters you want.
-- **Types**: Strongly-typed system (e.g., User, Repository).
-
-**Example GraphQL Query:**
+**Example query used in this project:**
 
 ```graphql
 query ($login: String!) {
   user(login: $login) {
     name
     avatarUrl
-    repositories(first: 5) {
+    repositories(first: 100) {
+      totalCount
       nodes {
         name
         stargazerCount
+        forkCount
       }
     }
   }
 }
 ```
 
-### What is Apollo Client?
+### Apollo Client
 
-Apollo Client is a comprehensive state management library for JavaScript that enables you to manage both local and remote data with GraphQL. It handles fetching, caching, updating, and error handling for your data.
+Apollo Client handles:
 
-- **ApolloProvider**: Wraps your React app to provide GraphQL data via context.
-- **useQuery Hook**: Fetches data from the server and manages loading/error states.
-- **InMemoryCache**: Caches query results for performance.
-- **Error Handling**: Handles GraphQL and network errors gracefully.
+- **ApolloProvider** — Wraps the app to provide GraphQL state
+- **useQuery** — Fetches data and handles loading/error
+- **InMemoryCache** — Caches query results
+- **HttpLink** — Sends requests to GitHub's API
+- **Error link** — Logs GraphQL and network errors
 
-**How it works in this project:**
+**Usage in this project:**
 
-- The app uses Apollo Client to send queries to the GitHub GraphQL API.
-- The `apolloClient.ts` file configures the client, sets up error handling, and injects the GitHub token for authentication.
-- Components like `UserProfile` use the `useQuery` hook to fetch user data and display it.
+```tsx
+const { data, loading, error } = useQuery<UserData>(GET_USER, {
+  variables: { login: userName },
+});
+```
 
 ---
 
-## Detailed Project Walkthrough
+## Libraries & Dependencies
 
-### Main Files & Their Roles
+### Core
 
-- **src/apolloClient.ts**: Configures Apollo Client with error handling and authentication for GitHub's GraphQL API.
-- **src/queries.ts**: Contains the main GraphQL query to fetch user profile, repositories, followers, following, and gists.
-- **src/types.ts**: TypeScript types for all data structures returned by the API (User, Repository, Language, etc).
-- **src/utils.ts**: Utility functions to process and aggregate repository data for charts (e.g., most used languages, most starred repos).
-- **src/components/form/SearchForm.tsx**: Controlled input form for searching GitHub users, with validation and toast notifications.
-- **src/components/user/UserProfile.tsx**: Fetches user data using Apollo's `useQuery`, displays profile, stats, and charts. Handles loading and error states.
-- **src/components/user/UserCard.tsx**: Displays avatar, name, bio, and a link to the user's GitHub profile.
-- **src/components/user/StatsContainer.tsx & StatsCard.tsx**: Show user statistics (repos, followers, following, gists) in a grid of cards.
-- **src/components/charts/UsedLanguages.tsx**: Bar chart of the user's most used programming languages (uses Recharts and utility functions).
-- **src/components/charts/PopularRepos.tsx**: Bar chart of the user's most starred repositories.
-- **src/components/charts/ForkedRepos.tsx**: Bar chart of the user's most forked repositories.
-- **src/components/ui/**: shadcn/ui components for consistent, modern UI (button, card, input, skeleton, toast, etc).
-- **src/components/user/Loading.tsx**: Skeleton loading UI for a smooth user experience.
+- **Next.js** — React framework with App Router, SSR, routing
+- **React** — UI library
+- **TypeScript** — Static typing
 
-### How Data Flows
+### Data & API
 
-1. **User enters a username** in the search form.
-2. **SearchForm** validates input and updates the username state.
-3. **UserProfile** receives the username, triggers a GraphQL query via Apollo Client.
-4. **Apollo Client** sends the query to GitHub's GraphQL API, using the token for authentication.
-5. **Data is fetched and cached**; loading and error states are handled.
-6. **UserProfile** displays the user's info, stats, and charts using the fetched data.
-7. **Charts** use utility functions to aggregate and visualize repository data.
+- **@apollo/client** — GraphQL client (fetch, cache, hooks)
+- **graphql** — GraphQL parser and utilities
 
-### Error Handling & Feedback
+### UI
 
-- All API/network errors are caught and displayed to the user.
-- Invalid input triggers a toast notification.
-- Loading states are shown with skeleton components.
+- **tailwindcss** — Utility-first CSS
+- **tailwindcss-animate** — Animation utilities
+- **@radix-ui** — Accessible primitives (label, select, slot, toast)
+- **class-variance-authority** — Variant styling for components
+- **clsx** + **tailwind-merge** — Conditional class merging
+- **lucide-react** — UI icons
+- **react-icons** — Additional icons (e.g. MdCopyright)
+- **recharts** — Charts
+- **framer-motion** — Animations
 
-### Customization & Extending
+### Example: Using `cn()` for class merging
 
-- You can easily add more fields to the GraphQL query in `queries.ts`.
-- Add more charts or visualizations by creating new components and utility functions.
-- The UI is fully responsive and can be themed via Tailwind/shadcn.
+```tsx
+import { cn } from "@/lib/utils";
+
+<div className={cn("base-class", className, isActive && "active-class")} />;
+```
+
+---
+
+## Reusing Components
+
+### In another Next.js project
+
+1. Copy `components/`, `context/`, `hooks/`, `lib/`, `types/`
+2. Install dependencies: `@apollo/client`, `graphql`, `recharts`, `framer-motion`, Radix packages
+3. Wrap your app with `Providers` (ThemeProvider, SearchProvider, etc.)
+4. Use `ExplorerPage` or individual components as needed
+
+### Standalone components
+
+- **SearchForm** — Needs `SearchContext` and `useToast`
+- **UserProfile** — Needs `ApolloProvider` and `client`
+- **Charts** — Need `repositories` array; copy `lib/data-utils.ts` helpers
 
 ---
 
 ## Keywords
 
-React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Apollo Client, GraphQL, GitHub API, Recharts, Data Visualization, User Search, Responsive UI, Toast, Skeleton, Modern Web App
+- GitHub Profile Explorer
+- GitHub GraphQL API
+- Next.js
+- React
+- TypeScript
+- Apollo Client
+- GraphQL
+- Tailwind CSS
+- shadcn/ui
+- Recharts
+- Data Visualization
+- User Search
+- Repository Stats
+- Responsive UI
 
 ---
 
 ## License
 
-This project is for educational/demo purposes. See [LICENSE](./LICENSE) if present.
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). Feel free to use, modify, and distribute the code as per the terms of the license.
 
----
+## Happy Coding! 🎉
+
+This is an **open-source project** - feel free to use, enhance, and extend this project further!
+
+If you have any questions or want to share your work, reach out via GitHub or my portfolio at [https://www.arnobmahmud.com](https://www.arnobmahmud.com).
+
+**Enjoy building and learning!** 🚀
+
+Thank you! 😊

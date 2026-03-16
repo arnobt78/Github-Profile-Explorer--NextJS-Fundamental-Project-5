@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Wrapper that fades in and slides up (Framer Motion). Optional delay for stagger.
+ * Used in UserProfile for error/not-found blocks and chart sections.
+ */
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 

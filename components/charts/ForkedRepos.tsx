@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Bar chart: top 10 most forked repos (from calculateMostForkedRepos).
+ * X-axis: repo name (truncated); Y-axis: fork count. Label on bar; tooltip on hover.
+ */
 import type { Repository } from "@/types";
 import { calculateMostForkedRepos } from "@/lib/data-utils";
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";

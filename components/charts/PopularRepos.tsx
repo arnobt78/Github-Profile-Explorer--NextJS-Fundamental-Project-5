@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Bar chart: top 10 most starred repos (from calculateMostStarredRepos).
+ * X-axis: repo name (truncated); Y-axis: stars. Label on bar; tooltip on hover.
+ */
 import type { Repository } from "@/types";
 import { calculateMostStarredRepos } from "@/lib/data-utils";
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";

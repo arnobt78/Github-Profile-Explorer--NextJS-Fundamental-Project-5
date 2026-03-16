@@ -1,9 +1,15 @@
+/**
+ * Data utilities for repositories: sorting, filtering, and chart data.
+ * Used by RepoList (filters/sort) and chart components (UsedLanguages, PopularRepos, ForkedRepos).
+ */
 import type { Repository } from "@/types";
 
+/** Sort dropdown options in RepoList. */
 export type RepoSortOption = "popular" | "stars" | "forks";
 
 /**
  * Sort repositories by popularity (stars + forks combined).
+ * Default sort in RepoList so "best" projects appear first.
  */
 export function sortReposByPopularity(repositories: Repository[]): Repository[] {
   return [...repositories].sort(
@@ -27,7 +33,8 @@ export function sortReposByForks(repositories: Repository[]): Repository[] {
 }
 
 /**
- * Filter repositories by primary language.
+ * Filter repositories by primary language (first language in edges).
+ * "all" returns the list unchanged.
  */
 export function filterReposByLanguage(
   repositories: Repository[],
@@ -40,6 +47,7 @@ export function filterReposByLanguage(
   });
 }
 
+/** Repo type filter: all, only originals, or only forked repos. */
 export type RepoTypeFilter = "all" | "originals" | "forks";
 
 /**
@@ -55,7 +63,8 @@ export function filterReposByType(
 }
 
 /**
- * Get unique languages from repositories (for filter dropdown).
+ * Get unique languages from all repos for the Language filter dropdown.
+ * Returns sorted array of language names.
  */
 export function getRepoLanguages(repositories: Repository[]): string[] {
   const set = new Set<string>();
@@ -68,8 +77,8 @@ export function getRepoLanguages(repositories: Repository[]): string[] {
 }
 
 /**
- * Data helpers for chart series.
  * Top 10 most forked repos — used by ForkedRepos chart.
+ * Returns { repoName, count } sorted by count descending.
  */
 export function calculateMostForkedRepos(
   repositories: Repository[]
@@ -96,8 +105,8 @@ export function calculateMostStarredRepos(
 }
 
 /**
- * Top 10 most used languages across all repositories (by repo count).
- * Used for the "Used Languages" chart.
+ * Top 10 most used languages across all repositories (by number of repos using each).
+ * Used by UsedLanguages chart. Counts each language once per repo (from edges).
  */
 export function calculatePopularLanguages(
   repositories: Repository[]

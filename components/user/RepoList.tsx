@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Repository list: heading with count badge, sort/language/type filters (shadcn Select),
+ * "Clear Filter" when any filter is active, empty state with reset, and grid of repo cards.
+ * Each card: name, link, description, stars/forks, language badges, topic badges.
+ * totalCount: when > repositories.length, badge shows "X of Y" (API fetches first 100).
+ */
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { Repository } from "@/types";
@@ -47,6 +53,7 @@ export function RepoList({ repositories, totalCount }: RepoListProps) {
 
   const languages = useMemo(() => getRepoLanguages(repositories), [repositories]);
 
+  /** Apply type + language filters, then sort; used for badge count and empty state. */
   const filteredAndSortedFull = useMemo(() => {
     let result = filterReposByType(repositories, repoType);
     result = filterReposByLanguage(result, language);
@@ -56,6 +63,7 @@ export function RepoList({ repositories, totalCount }: RepoListProps) {
     return result;
   }, [repositories, sort, language, repoType]);
 
+  /** Display only first 12 repos in the grid. */
   const filteredAndSorted = useMemo(
     () => filteredAndSortedFull.slice(0, 12),
     [filteredAndSortedFull]

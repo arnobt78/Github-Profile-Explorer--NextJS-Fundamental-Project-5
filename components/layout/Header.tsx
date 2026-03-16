@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * App header: logo + title (left), recent searches (center), theme toggle (right).
+ * Sticky; max-w-9xl for wide layout. RecentSearches calls setUserName when a pill is clicked.
+ */
 import Link from "next/link";
 import { UserRoundSearch } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";

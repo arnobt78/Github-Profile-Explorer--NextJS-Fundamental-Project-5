@@ -1,3 +1,4 @@
+/* Global styles: Tailwind, CSS variables for light/dark (.:root and .dark), grid animation. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -67,6 +68,7 @@
   }
 }
 
+/* Subtle moving grid used as background on ExplorerPage (animate-grid-move). */
 @keyframes grid-move {
   0% { background-position: 0 0; }
   100% { background-position: 24px 24px; }

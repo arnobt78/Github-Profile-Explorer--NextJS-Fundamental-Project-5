@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Stats container: 4 cards in a responsive grid (Total Repos, Followers, Following, Gists).
+ * Receives counts from UserProfile (data.user.repositories.totalCount, etc.).
+ */
 import { StatsCard } from "./StatsCard";
 
 type StatsContainerProps = {

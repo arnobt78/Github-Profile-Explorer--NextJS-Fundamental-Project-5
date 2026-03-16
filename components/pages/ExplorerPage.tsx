@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Main explorer page: hero with "Let's [StreamingText]", subtitle, "What you'll learn" cards,
+ * search form, and UserProfile. Rendered by app/page.tsx. Uses SearchContext for userName.
+ */
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Code2, Database, Layers, Palette, Zap, GitBranch } from "lucide-react";
@@ -9,6 +13,7 @@ import { useSearchContext } from "@/context/SearchContext";
 import { EducationalCard } from "@/components/ui/EducationalCard";
 import { StreamingText } from "@/components/ui/StreamingText";
 
+/** Framer variant: fade in and move up. */
 const fadeIn = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0 },
@@ -21,6 +26,7 @@ const stagger = {
   },
 };
 
+/** Six learning topics shown as cards with icon, title, description. */
 const learnItems = [
   {
     title: "React Fundamentals",
@@ -65,6 +71,7 @@ export function ExplorerPage() {
 
   return (
     <main className="relative min-h-screen">
+      {/* Animated grid background (globals.css animate-grid-move). */}
       <div
         className="pointer-events-none fixed inset-0 z-0 animate-grid-move bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"
         aria-hidden

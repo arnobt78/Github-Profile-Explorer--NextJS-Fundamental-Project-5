@@ -1,6 +1,14 @@
 import { gql } from "@apollo/client";
 
-/** GraphQL query to fetch a GitHub user with repos and language stats */
+/**
+ * GraphQL query to fetch a GitHub user with repos and language stats.
+ *
+ * API: GitHub GraphQL (https://api.github.com/graphql).
+ * Variable: $login (username, e.g. "octocat").
+ *
+ * Returns: user profile, up to 100 repos (with languages + topics), follower/following/gist counts.
+ * repositories.first: 100 is the max we request; totalCount can be higher (badge shows "X of Y" when so).
+ */
 export const GET_USER = gql`
   query ($login: String!) {
     user(login: $login) {

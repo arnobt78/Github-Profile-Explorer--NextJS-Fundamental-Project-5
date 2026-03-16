@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 
+/** Tailwind: class-based dark mode, custom max-w-9xl, font vars, radius, theme colors from CSS vars. */
 const config: Config = {
   darkMode: ["class"],
   content: [

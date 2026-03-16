@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Search history context: recent GitHub usernames for quick re-search.
+ * Stored in localStorage (key: github-explorer-recent-searches), max 10 items.
+ * RecentSearches component shows them in the header; SearchForm calls addSearch on submit.
+ */
 import {
   createContext,
   useCallback,
@@ -21,6 +26,7 @@ const SearchHistoryContext = createContext<SearchHistoryContextValue | null>(
   null
 );
 
+/** Load recent searches from localStorage; validate and cap at MAX_RECENT. */
 function loadFromStorage(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -44,6 +50,7 @@ function saveToStorage(searches: string[]): void {
   }
 }
 
+/** Provides recentSearches, addSearch, clearHistory. Hydrates from storage on mount. */
 export function SearchHistoryProvider({ children }: { children: React.ReactNode }) {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
@@ -53,6 +60,7 @@ export function SearchHistoryProvider({ children }: { children: React.ReactNode 
     return () => clearTimeout(id);
   }, []);
 
+  /** Add username to front of list, dedupe, persist; called after successful search. */
   const addSearch = useCallback((username: string) => {
     const trimmed = username.trim().toLowerCase();
     if (!trimmed) return;
@@ -78,6 +86,7 @@ export function SearchHistoryProvider({ children }: { children: React.ReactNode 
   );
 }
 
+/** Hook for recent searches and add/clear. Use inside SearchHistoryProvider. */
 export function useSearchHistoryContext(): SearchHistoryContextValue {
   const ctx = useContext(SearchHistoryContext);
   if (!ctx) {

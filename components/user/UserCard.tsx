@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * User card: avatar, name, @login, bio, company/location/website/twitter/joined, and "View on GitHub".
+ * Receives props from UserProfile (data.user). Uses Next Image for avatar.
+ */
 import Image from "next/image";
 import { Building2, Calendar, Globe, MapPin, Twitter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +27,7 @@ type UserCardProps = {
   twitterUsername?: string;
 };
 
+/** Format ISO date as "Nov 2015" for "Joined" display. */
 function formatDate(iso: string): string {
   try {
     const d = new Date(iso);
@@ -48,7 +53,7 @@ export function UserCard({
   twitterUsername,
 }: UserCardProps) {
   return (
-    <Card className="mb-8 w-full lg:w-1/2">
+    <Card className="mb-8 w-full">
       <CardHeader className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <Image
           src={avatarUrl}

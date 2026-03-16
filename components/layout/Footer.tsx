@@ -1,3 +1,7 @@
+/**
+ * Site footer: centered copyright line with current year.
+ * Rendered in root layout below main content.
+ */
 import { MdCopyright } from "react-icons/md";
 
 export function Footer() {

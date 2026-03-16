@@ -1,8 +1,8 @@
 /**
- * Shared types for GitHub GraphQL API responses.
- * Language edge = one language on a repo (name + size).
+ * Shared types for GitHub GraphQL API responses (GET_USER query).
+ * Matches the shape returned by GitHub's GraphQL API so TypeScript and components stay in sync.
  */
-/** Language edge from GitHub GraphQL repository languages */
+/** Language edge from GitHub GraphQL repository.languages (name + size in bytes). */
 export type LanguageEdge = {
   node: {
     name: string;
@@ -10,7 +10,7 @@ export type LanguageEdge = {
   size: number;
 };
 
-/** Repository shape from GitHub GraphQL API */
+/** Repository: name, description, stars, forks, url, languages, topics (from GET_USER). */
 export type Repository = {
   name: string;
   description: string;
@@ -26,7 +26,7 @@ export type Repository = {
   };
 };
 
-/** User shape from GitHub GraphQL API */
+/** User: profile fields + repositories, followers, following, gists (from GET_USER). */
 export type User = {
   login?: string;
   name: string;
@@ -53,7 +53,7 @@ export type User = {
   };
 };
 
-/** GET_USER query response payload */
+/** Root type for useQuery(GET_USER): { data: UserData }. */
 export type UserData = {
   user: User;
 };

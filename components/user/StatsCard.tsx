@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Single stat card: title (e.g. "Total Repositories") and count. Reused 4x in StatsContainer.
+ */
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
 type StatsCardProps = {

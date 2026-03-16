@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Light/dark mode toggle button. Uses ThemeContext; shows Moon in light mode, Sun in dark.
+ * Placed in Header. Persistence is handled in ThemeContext and layout theme script.
+ */
 import { Moon, Sun } from "lucide-react";
 import { useThemeContext } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Bar chart: most used languages across repos (from calculatePopularLanguages).
+ * Shows label on top of each bar; tooltip on hover. Used in UserProfile.
+ */
 import type { Repository } from "@/types";
 import { calculatePopularLanguages } from "@/lib/data-utils";
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";

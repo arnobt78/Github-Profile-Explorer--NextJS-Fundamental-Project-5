@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Recent searches: pills for each saved username. Clicking a pill calls onSelect(username).
+ * Used in Header; onSelect is setUserName from SearchContext. Trash clears history.
+ */
 import { motion } from "framer-motion";
 import { History, Trash2 } from "lucide-react";
 import { useSearchHistory } from "@/hooks/useSearchHistory";

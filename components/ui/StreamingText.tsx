@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Typewriter-style animated text: cycles through WORDS, types in, holds, then deletes and next.
+ * Used in hero as "Let's [StreamingText]". State: wordIndex, display (current substring), isDeleting.
+ */
 import { useEffect, useState } from "react";
 
 const WORDS = ["Explore", "Search", "Connect", "Code", "Build", "Learn"];
@@ -9,6 +13,7 @@ export function StreamingText() {
   const [display, setDisplay] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  /** Single effect: typing in (char by char), hold 1.5s, delete, then advance to next word (deferred to avoid setState-in-effect warning). */
   useEffect(() => {
     const word = WORDS[wordIndex];
     const timeout = isDeleting ? 80 : 150;

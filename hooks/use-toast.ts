@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Toast hook and API: useToast() returns { toasts, toast, dismiss }.
+ * toast({ description }) shows a notification; SearchForm uses it for validation errors.
+ * State is held in module-level memory + listeners so any component can trigger a toast.
+ */
 import * as React from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 

@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Theme context: light/dark mode. Persists to localStorage; layout runs an inline script
+ * to apply theme before paint to avoid flash. ThemeToggle in Header uses toggleTheme().
+ */
 import {
   createContext,
   useCallback,
@@ -20,6 +24,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+/** Reads theme from localStorage, else system preference (prefers-color-scheme). */
 function loadTheme(): Theme {
   if (typeof window === "undefined") return "light";
   try {
@@ -33,6 +38,7 @@ function loadTheme(): Theme {
   }
 }
 
+/** Applies theme by setting "light" or "dark" class on <html>; CSS variables in globals.css. */
 function applyTheme(theme: Theme): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
@@ -41,6 +47,7 @@ function applyTheme(theme: Theme): void {
   root.classList.add(theme);
 }
 
+/** Provides theme state; on mount reads from storage and applies. */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
 
@@ -51,6 +58,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(id);
   }, []);
 
+  /** Set theme, apply to DOM, persist to localStorage. */
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
     applyTheme(t);
@@ -72,6 +80,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Hook for current theme and setTheme/toggleTheme. Use inside ThemeProvider. */
 export function useThemeContext(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
