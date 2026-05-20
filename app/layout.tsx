@@ -123,7 +123,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${outfit.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth" className={`${outfit.variable} ${jetbrainsMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
