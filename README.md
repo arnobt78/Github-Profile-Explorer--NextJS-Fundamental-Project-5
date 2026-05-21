@@ -71,13 +71,20 @@ A modern, feature-rich web application to search and explore GitHub user profile
 ├── hooks/
 │   ├── use-toast.ts        # Toast notifications
 │   └── useSearchHistory.ts # Search history hook
+├── app/api/
+│   ├── github/graphql/    # GitHub GraphQL proxy
+│   └── monitoring/        # Sentry tunnel
 ├── lib/
-│   ├── apollo-client.ts    # Apollo Client setup for GitHub GraphQL
-│   ├── data-utils.ts      # Sort/filter helpers, chart data
-│   ├── queries.ts         # GraphQL queries
-│   └── utils.ts           # cn() and utilities
+│   ├── apollo-client.ts         # Apollo → proxy
+│   ├── github-graphql-server.ts # Upstream fetch + retries
+│   ├── github-api-errors.ts     # Error codes/messages
+│   ├── report-github-api-error.ts
+│   ├── data-utils.ts
+│   ├── queries.ts
+│   └── utils.ts
 ├── types/
-│   └── index.ts           # User, Repository, Language types
+│   ├── index.ts           # User, Repository, UserData
+│   └── github-api.ts      # Proxy error types
 ├── public/
 │   ├── favicon.ico
 │   └── logo.svg
@@ -130,7 +137,8 @@ The app can run **without** a GitHub token for basic exploration, but the GitHub
 Create `.env.local` in the project root:
 
 ```env
-NEXT_PUBLIC_GITHUB_TOKEN=your-github-personal-access-token
+GITHUB_TOKEN=your-github-personal-access-token
+NEXT_PUBLIC_SENTRY_DSN=your-sentry-dsn
 ```
 
 See [Environment Variables](#environment-variables) for how to create a token.
@@ -160,23 +168,22 @@ npm run lint
 
 ## Environment Variables
 
-| Variable                   | Required     | Description                                  |
-| -------------------------- | ------------ | -------------------------------------------- |
-| `NEXT_PUBLIC_GITHUB_TOKEN` | Optional\*\* | GitHub Personal Access Token for GraphQL API |
+| Variable                   | Required | Description |
+| -------------------------- | -------- | ----------- |
+| `GITHUB_TOKEN`             | Yes\*    | GitHub PAT — server-only (`/api/github/graphql` proxy) |
+| `NEXT_PUBLIC_SENTRY_DSN`   | Optional | Sentry client DSN |
+| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | Optional | Source maps at build |
 
-**Without a token:** The app works but is subject to GitHub's unauthenticated rate limit (60 requests/hour). For learning and light use, you may not need it.
+\*Without a token the proxy returns a configured error (no public unauthenticated GraphQL from browser).
 
 **To create a token:**
 
-1. Go to [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
-2. Generate a new token (classic)
-3. Enable at least: `read:user`, `public_repo`
-4. Copy the token and add it to `.env.local`
-
-Example `.env.local`:
+1. [GitHub Settings → Personal access tokens](https://github.com/settings/tokens)
+2. Classic token with `read:user`, `public_repo`
+3. Add to `.env.local` as `GITHUB_TOKEN` (not `NEXT_PUBLIC_*`)
 
 ```env
-NEXT_PUBLIC_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ---
@@ -189,15 +196,14 @@ NEXT_PUBLIC_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 | ----- | ---------------------------------------------- |
 | `/`   | Home page — hero, search, user profile, charts |
 
-### API (No Backend)
+### API Routes
 
-This project has **no custom backend**. It talks directly to GitHub's public GraphQL API:
+| Route | Method | Purpose |
+| ----- | ------ | ------- |
+| `/api/github/graphql` | POST | Proxies GitHub GraphQL (server `GITHUB_TOKEN`, retries on 502/503/504) |
+| `/api/monitoring` | POST | Sentry tunnel (ad-block bypass) |
 
-- **Endpoint:** `https://api.github.com/graphql`
-- **Method:** POST (GraphQL)
-- **Auth:** Optional Bearer token via `NEXT_PUBLIC_GITHUB_TOKEN`
-
-The app uses the `user` query from GitHub's schema to fetch profile, repositories, followers, following, and gists.
+Browser → same-origin proxy → `https://api.github.com/graphql`. Avoids exposing the PAT and fixes intermittent CORS errors when GitHub returns gateway failures.
 
 ---
 
@@ -278,7 +284,7 @@ Light/dark mode toggle. Uses `ThemeContext` and persists to `localStorage`.
 1. User enters a username in **SearchForm**
 2. **SearchForm** validates and calls `setUserName` from **SearchContext**
 3. **UserProfile** receives `userName`, runs `useQuery(GET_USER, { variables: { login: userName } })`
-4. **Apollo Client** sends the query to GitHub GraphQL API
+4. **Apollo Client** POSTs to `/api/github/graphql` (server forwards to GitHub)
 5. Data is cached; loading and error states are handled
 6. **UserProfile** renders **UserCard**, **StatsContainer**, **RepoList**, and charts
 7. **Data utils** (`lib/data-utils.ts`) transform repo data for charts and filters
@@ -317,7 +323,7 @@ Apollo Client handles:
 - **ApolloProvider** — Wraps the app to provide GraphQL state
 - **useQuery** — Fetches data and handles loading/error
 - **InMemoryCache** — Caches query results
-- **HttpLink** — Sends requests to GitHub's API
+- **HttpLink** — Sends requests to `/api/github/graphql` (same-origin proxy)
 - **Error link** — Logs GraphQL and network errors
 
 **Usage in this project:**

@@ -1,7 +1,7 @@
 # Project Walkthrough — GitHub Profile Explorer
 
-> Short overview of codebase architecture, data flow, and system design. Updated to reflect latest state.
-> Last updated: 2026-05-20
+> Short overview of codebase architecture, data flow, and system design. Updated to reflect latest state.  
+> Last updated: 2026-05-21
 
 ---
 
@@ -19,62 +19,79 @@ Live: `https://github-dev-explorer.vercel.app`
 |---------|--------|-----|
 | Framework | Next.js 16 / React 19 | App Router, fast dev experience |
 | Styling | Tailwind CSS 3 + shadcn/ui + Radix UI | Utility-first; accessible primitives |
-| Data | Apollo Client 3 → GitHub GraphQL API | Single query returns all user data |
+| Data | Apollo Client 3 → `/api/github/graphql` → GitHub GraphQL | Single query returns all user data; token on server |
 | Charts | Recharts 2 | Composable chart primitives |
 | Animations | Framer Motion 11 | Scroll/entrance animations |
 | Error tracking | Sentry (`@sentry/nextjs`) | Error capture + performance tracing |
 | Deployment | Vercel | Zero-config Next.js deploy |
 
+**Not in this project:** Redis, PostHog, database, SSR/ISR data fetching.
+
 ---
 
-## Architecture: CSR-Heavy, No Server Data Fetching
+## Architecture: CSR-Heavy + API Proxy
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Browser                                                      │
+│  Browser (client-side rendering)                              │
 │                                                               │
 │  Next.js shell (layout.tsx)                                   │
 │    ├─ Providers (ThemeProvider > SearchHistory > Search >     │
 │    │             ApolloProvider)                              │
 │    ├─ Header                                                  │
 │    ├─ ExplorerPage ──────────────────────────────────────┐    │
-│    │    ├─ SearchForm                                    │    │
-│    │    │    └─ Apollo useQuery(GET_USER, {login})  ──→  │    │
-│    │    │                                               │    │
-│    │    │         GitHub GraphQL API ←─────────────────-┘    │
-│    │    │         (api.github.com/graphql)                    │
-│    │    │                                                     │
-│    │    ├─ UserProfile (avatarUrl, bio, stats)                │
-│    │    ├─ RepoList (up to 100 repos)                         │
-│    │    ├─ UsedLanguages (PieChart)                           │
-│    │    ├─ PopularRepos (BarChart)                            │
-│    │    └─ ForkedRepos (BarChart)                             │
-│    └─ Footer                                                  │
-└─────────────────────────────────────────────────────────────-┘
+│    │    ├─ SearchForm / RecentSearches                   │    │
+│    │    │    └─ updates SearchContext.userName           │    │
+│    │    ├─ UserProfile                                   │    │
+│    │    │    └─ Apollo useQuery(GET_USER, {login})  ───┼──┐ │
+│    │    ├─ UserCard, StatsContainer, RepoList          │  │ │
+│    │    ├─ UsedLanguages (PieChart)                    │  │ │
+│    │    ├─ PopularRepos (BarChart)                     │  │ │
+│    │    └─ ForkedRepos (BarChart)                      │  │ │
+│    └─ Footer                                           │  │ │
+└────────────────────────────────────────────────────────│──│─┘
+                                                         │  │
+                         POST /api/github/graphql ◄──────┘  │
+┌─────────────────────────────────────────────────────────────┐
+│  Next.js server (API route)                                   │
+│    app/api/github/graphql/route.ts                            │
+│      ├─ Validates GET_USER-shaped query + login variable      │
+│      ├─ lib/github-graphql-server.ts → GitHub with GITHUB_TOKEN │
+│      ├─ Retries 502/503/504 (max 3)                           │
+│      └─ Returns JSON (GraphQL data or structured errors)        │
+└───────────────────────────────┬───────────────────────────────┘
+                                ▼
+                    https://api.github.com/graphql
 ```
 
 **Key architectural facts:**
-- All data fetching is client-side (Apollo Client runs in the browser).
-- No SSR data fetching, no server components with `fetch()`, no `getServerSideProps`.
-- No database — GitHub API is the only data source.
-- `NEXT_PUBLIC_GITHUB_TOKEN` is browser-safe (public prefix) but gates higher API rate limits.
+
+- UI is **client-rendered**; Apollo runs in the browser.
+- **No** `getServerSideProps`, no server components that `fetch()` user data.
+- **No database** — GitHub GraphQL API is the only data source.
+- GitHub calls go through a **same-origin proxy** so the PAT stays server-side (`GITHUB_TOKEN`) and responses stay JSON-shaped for Apollo.
+- Apollo **`InMemoryCache`** keys results by query + `login` (repeat search for same user is instant until refresh).
 
 ---
 
 ## Data Flow
 
 ```
-1. User types GitHub username in SearchForm
-2. SearchContext updates → ExplorerPage re-renders
-3. Apollo useQuery(GET_USER, { variables: { login } }) fires
-4. Request: POST https://api.github.com/graphql
-   Headers: Authorization: Bearer NEXT_PUBLIC_GITHUB_TOKEN
-5. Response: { user: { login, name, avatarUrl, repositories, followers, ... } }
-   Typed as: UserData → User → Repository[] → LanguageEdge[]
-6. Apollo InMemoryCache stores result (keyed by query + variables)
-7. Components consume: UserProfile, StatsContainer, charts
-8. lib/data-utils.ts transforms raw repo data into chart-ready format
+1. User types GitHub username in SearchForm (or picks RecentSearches)
+2. SearchContext updates userName → ExplorerPage / UserProfile re-render
+3. Apollo useQuery(GET_USER, { variables: { login } }) runs
+4. HttpLink POST → /api/github/graphql  { query, variables }
+5. API route forwards to GitHub with Bearer GITHUB_TOKEN
+6. Response: { data: { user: { ... repositories, followers, ... } } }
+   Typed: UserData → User → Repository[] → LanguageEdge[]
+7. Apollo cache stores result
+8. UserProfile renders UserCard, StatsContainer, RepoList, charts
+9. lib/data-utils.ts transforms repo nodes for chart components
 ```
+
+**Search / cache behavior:** Changing `login` triggers a new fetch. Same `login` again uses Apollo cache (no page reload). Recent searches and theme use `localStorage`; current username is in-memory only.
+
+**Response time:** `GET_USER` requests up to **100 repos** with languages and topics in one round trip. Large profiles commonly take **several seconds to ~30s** depending on GitHub load and repo count.
 
 ---
 
@@ -102,7 +119,7 @@ query ($login: String!) {
 }
 ```
 
-`repositories(first: 100)` is GitHub API max per request. `totalCount` can exceed 100; the UI shows "X of Y" in that case.
+`repositories(first: 100)` is the max requested per query. `totalCount` can exceed 100; the UI shows "X of Y" when applicable.
 
 ---
 
@@ -115,7 +132,9 @@ query ($login: String!) {
 | Theme (dark/light) | `ThemeContext` | `localStorage` key: `"github-explorer-theme"` |
 | API query results | Apollo `InMemoryCache` | In-memory |
 
-**Theme flash prevention**: An inline `<script>` in `<head>` (layout.tsx) reads localStorage before React hydrates and applies `"dark"` or `"light"` class to `<html>`. This runs synchronously so there's no visible flash on first paint.
+**Theme flash prevention:** Inline `<script>` in `<head>` (`layout.tsx`) reads localStorage before React hydrates and applies `"dark"` or `"light"` on `<html>` synchronously.
+
+**Invalidation pattern:** No full page refresh. `setUserName` updates context → `useQuery` refetches when `login` changes. Apollo cache invalidates implicitly per variable set; same variable hits cache.
 
 ---
 
@@ -124,36 +143,59 @@ query ($login: String!) {
 ```
 app/layout.tsx
 └─ Providers.tsx
-   ├─ ThemeProvider       (context/ThemeContext.tsx)
-   ├─ SearchHistoryProvider (context/SearchHistoryContext.tsx)
-   ├─ SearchProvider      (context/SearchContext.tsx)
-   └─ ApolloProvider      (lib/apollo-client.ts → client)
-      ├─ Header            (components/layout/Header.tsx)
+   ├─ ThemeProvider            (context/ThemeContext.tsx)
+   ├─ SearchHistoryProvider    (context/SearchHistoryContext.tsx)
+   ├─ SearchProvider           (context/SearchContext.tsx)
+   └─ ApolloProvider           (lib/apollo-client.ts → client)
+      ├─ Header                (components/layout/Header.tsx)
       ├─ {children} = page.tsx → ExplorerPage
-      │   ├─ SearchForm    (components/form/SearchForm.tsx)
-      │   ├─ RecentSearches (components/form/RecentSearches.tsx)
-      │   ├─ UserProfile   (components/user/UserProfile.tsx)
-      │   ├─ UserCard      (components/user/UserCard.tsx)
+      │   ├─ SearchForm        (components/form/SearchForm.tsx)
+      │   ├─ RecentSearches    (components/form/RecentSearches.tsx)
+      │   ├─ UserProfile       (components/user/UserProfile.tsx)
+      │   ├─ UserCard          (components/user/UserCard.tsx)
       │   ├─ StatsContainer / StatsCard
       │   ├─ RepoList
-      │   ├─ UsedLanguages (components/charts/UsedLanguages.tsx)
-      │   ├─ PopularRepos  (components/charts/PopularRepos.tsx)
-      │   └─ ForkedRepos   (components/charts/ForkedRepos.tsx)
-      ├─ Footer            (components/layout/Footer.tsx)
-      └─ Toaster           (components/ui/toaster.tsx)
+      │   ├─ UsedLanguages     (components/charts/UsedLanguages.tsx)
+      │   ├─ PopularRepos      (components/charts/PopularRepos.tsx)
+      │   └─ ForkedRepos       (components/charts/ForkedRepos.tsx)
+      ├─ Footer                (components/layout/Footer.tsx)
+      └─ Toaster               (components/ui/toaster.tsx)
 ```
+
+---
+
+## Shared Libs & Types
+
+| Path | Role |
+|------|------|
+| `lib/apollo-client.ts` | Apollo client, proxy URI, error link, `getApolloGitHubErrorMessage` |
+| `lib/github-graphql-server.ts` | Server upstream fetch, retries, token helper |
+| `lib/github-api-errors.ts` | Error codes and user-facing messages |
+| `lib/report-github-api-error.ts` | Sentry reporting (`github-api` tag) |
+| `lib/queries.ts` | `GET_USER` document |
+| `lib/data-utils.ts` | Sort/filter/chart data transforms |
+| `lib/utils.ts` | `cn()` (clsx + tailwind-merge) |
+| `types/index.ts` | `User`, `Repository`, `UserData`, `LanguageEdge` |
+| `types/github-api.ts` | Proxy request/error extension types |
+| `hooks/useSearchHistory.ts` | Search history hook |
+| `hooks/use-toast.ts` | Toast hook |
 
 ---
 
 ## API Routes
 
-Before this iteration: **none**.
-
-After this iteration:
-
 | Route | Method | Purpose |
 |-------|--------|---------|
-| `POST /api/monitoring` | POST | Sentry tunnel proxy — see below |
+| `POST /api/github/graphql` | POST | GitHub GraphQL proxy — auth, validation, retries, JSON errors |
+| `POST /api/monitoring` | POST | Sentry tunnel proxy — ad-block bypass |
+
+### GitHub proxy workflow
+
+1. Apollo sends standard GraphQL POST body.
+2. Route parses JSON; `isAllowedGraphQLBody()` ensures `user(login:` query + `variables.login`.
+3. `fetchGitHubGraphQLUpstream()` calls GitHub with `GITHUB_TOKEN` (or legacy `NEXT_PUBLIC_GITHUB_TOKEN` fallback in dev).
+4. On upstream 5xx after retries → HTTP 200 with `{ errors: [{ extensions: { code: GITHUB_UPSTREAM_ERROR } }] }` for Apollo.
+5. Rate-limit headers (`x-ratelimit-*`, `x-github-request-id`) forwarded when present.
 
 ---
 
@@ -161,55 +203,50 @@ After this iteration:
 
 ### Why a tunnel?
 
-Ad-block browser extensions (uBlock Origin, Privacy Badger, Ghostery) maintain lists of tracking domains. `*.sentry.io` and `*.ingest.sentry.io` are on these lists. A standard Sentry integration fails silently in any browser with these extensions enabled — **errors are never reported**.
+Ad-block extensions block `*.sentry.io` / `*.ingest.sentry.io`. Errors may never reach Sentry if the SDK posts directly to those hosts.
 
 ### Tunnel solution
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Browser (with uBlock, Privacy Badger, etc.)         │
-│                                                       │
-│  Sentry SDK                                           │
-│    tunnel: "/api/monitoring"   ← same origin, safe   │
-│           │                                           │
-│           ▼                                           │
-│  POST /api/monitoring          ← not on block lists   │
+│  Sentry SDK  tunnel: "/api/monitoring"               │
+│           ▼                                          │
+│  POST /api/monitoring          (same origin)         │
 └───────────────────┬───────────────────────────────────┘
-                    │  (Vercel server — no browser in loop)
                     ▼
           app/api/monitoring/route.ts
-            1. Parse Sentry envelope (newline-delimited JSON)
-            2. Extract DSN from envelope header line 1
-            3. Validate: hostname must end with sentry.io (security)
-            4. Forward to https://{dsn_host}/api/{projectId}/envelope/
-                    │
+            1. Parse Sentry envelope
+            2. Validate DSN host ends with sentry.io
+            3. Forward to ingest URL
                     ▼
-          Sentry Ingest (sentry.io)
-            ✓ Error appears in Sentry dashboard
+          Sentry dashboard
 ```
 
 ### Config files
 
 | File | Runtime | Purpose |
 |------|---------|---------|
-| `sentry.client.config.ts` | Browser | Init + tunnel routing |
-| `sentry.server.config.ts` | Node.js | Server API route error capture |
-| `sentry.edge.config.ts` | Edge | Middleware error capture |
-| `instrumentation.ts` | Server startup | Bootstraps server/edge Sentry |
+| `sentry.client.config.ts` | Browser | Init + tunnel + replay |
+| `sentry.server.config.ts` | Node.js | Server/API errors |
+| `sentry.edge.config.ts` | Edge | Middleware errors |
+| `instrumentation.ts` | Server startup | Loads server/edge Sentry |
+
+### GitHub API errors in Sentry
+
+`lib/report-github-api-error.ts` sends proxy/upstream failures with tag `github-api`. Generic `"Failed to fetch"` remains in `ignoreErrors` for offline noise.
 
 ### ErrorBoundary usage
 
 ```tsx
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
-// Protect a risky subtree — errors captured in Sentry, fallback shown to user
 <ErrorBoundary>
   <ComponentThatMightThrow />
 </ErrorBoundary>
 
-// Custom fallback
 <ErrorBoundary fallback={<p>Charts failed to load.</p>}>
-  <UsedLanguages data={repos} />
+  <UsedLanguages repositories={repos} />
 </ErrorBoundary>
 ```
 
@@ -217,20 +254,16 @@ import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 ## Vercel Production Guardrails
 
-### Problem (real incident, documented in `docs/VERCEL_PRODUCTION_GUARDRAILS.md`)
-
-Without headers/bot config: bots downloaded JS bundles on every visit (no cache), triggered image transforms, hit API routes — resulting in 163–183% overage on Vercel free tier within one billing cycle.
-
-### Implemented mitigations
+Documented in `docs/VERCEL_PRODUCTION_GUARDRAILS.md` (real free-tier overage incident from bot/crawler traffic).
 
 | Mitigation | Where | Effect |
 |-----------|-------|--------|
-| `Cache-Control: public, max-age=31536000, immutable` on `/_next/static/*` | `next.config.ts` + `vercel.json` | Bots/CDN cache content-hashed bundles forever; no repeated downloads |
-| Security headers (X-Frame-Options DENY, X-Content-Type-Options, etc.) | `next.config.ts` + `vercel.json` | Prevents clickjacking, MIME sniffing, XSS |
-| `robots.ts` | `app/robots.ts` | Disallows `/_next/`, `/api/`; blocks GPTBot, CCBot, Claude-Web, etc. |
-| `data-scroll-behavior="smooth"` on `<html>` | `app/layout.tsx` | Suppresses Next.js warning, no functional change |
+| `Cache-Control: immutable` on `/_next/static/*` | `next.config.ts` + `vercel.json` | Content-hashed bundles cached; fewer repeat downloads |
+| Security headers | `next.config.ts` + `vercel.json` | X-Frame-Options, nosniff, etc. |
+| `robots.ts` | `app/robots.ts` | Disallow `/_next/`, `/api/`; block AI scrapers |
+| `data-scroll-behavior="smooth"` on `<html>` | `app/layout.tsx` | Suppresses Next.js scroll warning |
 
-**Bot Protection and AI Bots** must still be enabled manually in the Vercel Dashboard under `Firewall → Bot Management`.
+**Manual (Vercel Dashboard):** Firewall → Bot Management → Bot Protection + AI Bots.
 
 ---
 
@@ -243,16 +276,36 @@ Repository      // name, stars, forks, url, languages, topics
 LanguageEdge    // { node: { name }, size }
 ```
 
-All API responses, component props, context values, and hook return types reference these.
+All API responses, component props, context values, and hooks use these types. Proxy extensions live in `types/github-api.ts`.
+
+---
+
+## Environment Variables
+
+```bash
+# GitHub — server only (required for proxy)
+GITHUB_TOKEN=ghp_...
+
+# Sentry
+NEXT_PUBLIC_SENTRY_DSN=https://...@ingest.de.sentry.io/...
+SENTRY_ORG=arnob-mahmuds-org
+SENTRY_PROJECT=github-dev-explorer
+SENTRY_AUTH_TOKEN=sntrys_...          # build: source maps
+
+# Optional
+NEXT_PUBLIC_SENTRY_RELEASE=git-commit-sha
+```
+
+Use **`GITHUB_TOKEN`** in Vercel (not `NEXT_PUBLIC_GITHUB_TOKEN`) so the PAT is not embedded in client JS.
 
 ---
 
 ## Deployment
 
 1. Push to `main` → Vercel auto-deploys.
-2. Set env vars in Vercel Dashboard: `NEXT_PUBLIC_GITHUB_TOKEN`, all `SENTRY_*` vars.
-3. Enable **Bot Protection** + **AI Bots** in `Firewall → Bot Management` (manual step — not in code).
-4. After deploy: check Vercel Observability → Edge Requests at T+15min and T+1hr for traffic spikes.
+2. Set env vars: `GITHUB_TOKEN`, all `SENTRY_*` vars.
+3. Enable **Bot Protection** + **AI Bots** in Vercel Firewall (manual).
+4. After deploy: check Observability → Edge Requests for spikes.
 
 ---
 
@@ -260,8 +313,17 @@ All API responses, component props, context values, and hook return types refere
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in NEXT_PUBLIC_GITHUB_TOKEN
+cp .env.example .env.local   # GITHUB_TOKEN + Sentry vars
 npm run dev                   # http://localhost:3000
 ```
 
-Sentry works locally without `SENTRY_AUTH_TOKEN` (source maps not uploaded in dev). Set `NEXT_PUBLIC_SENTRY_DSN` to capture local errors in Sentry dashboard.
+Sentry works locally without `SENTRY_AUTH_TOKEN` (source maps not uploaded in dev). Set `NEXT_PUBLIC_SENTRY_DSN` to see local errors in the Sentry project.
+
+---
+
+## Related Docs
+
+- `CLAUDE.md` — AI agent quick context
+- `docs/VERCEL_PRODUCTION_GUARDRAILS.md` — Vercel cost/security guardrails
+- `docs/Redis_Sentry_PostHog_INTEGRATION_GUIDE.md` — optional Redis/PostHog; Sentry status for this repo
+- `README.md` — setup and component reuse

@@ -2,7 +2,22 @@
 
 > **Purpose**: Complete setup guide for Redis caching, Sentry error tracking, and PostHog analytics integration  
 > **Reusable**: This guide can be applied to any Next.js project  
-> **Last Updated**: 2025-01-20
+> **Last Updated**: 2026-05-21
+
+---
+
+## GitHub Profile Explorer — What Is Integrated Today
+
+| Service | Status | In this repo |
+|---------|--------|----------------|
+| **Sentry** | ✅ Active | `sentry.*.config.ts`, `instrumentation.ts`, tunnel `POST /api/monitoring`, `ErrorBoundary`, `lib/report-github-api-error.ts` (GitHub proxy failures, tag `github-api`) |
+| **GitHub API** | ✅ Via proxy | `POST /api/github/graphql` — not direct browser → `api.github.com` (fixes 502/CORS masking) |
+| **Redis** | ❌ Not installed | Optional future: cache proxy responses per `login` in `github-graphql-server.ts` |
+| **PostHog** | ❌ Not installed | No analytics SDK |
+
+**Env (production):** `GITHUB_TOKEN` (server), `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_*` — see `CLAUDE.md` / `.env.example`.
+
+**Do not add Redis/PostHog** unless explicitly requested; Apollo `InMemoryCache` + `localStorage` cover client persistence today.
 
 ---
 
