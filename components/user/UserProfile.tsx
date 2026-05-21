@@ -4,9 +4,12 @@
  * User profile section: fetches GitHub user via GET_USER (Apollo useQuery), then renders
  * UserCard, StatsContainer, RepoList, and three charts. Handles loading, error, and not-found.
  */
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@apollo/client";
 import { GET_USER } from "@/lib/queries";
+import { getApolloGitHubErrorMessage } from "@/lib/apollo-client";
+import { agentDebugLog } from "@/lib/agent-debug-log";
 import type { UserData } from "@/types";
 import { UserCard } from "./UserCard";
 import { StatsContainer } from "./StatsContainer";
@@ -30,17 +33,37 @@ const stagger = {
 };
 
 export function UserProfile({ userName }: UserProfileProps) {
-  const { data, loading, error } = useQuery<UserData>(GET_USER, {
+  const { data, loading, error, networkStatus } = useQuery<UserData>(GET_USER, {
     variables: { login: userName },
+    notifyOnNetworkStatusChange: true,
   });
+
+  useEffect(() => {
+    if (loading) return;
+    // #region agent log
+    agentDebugLog({
+      location: "components/user/UserProfile.tsx:useEffect",
+      message: "useQuery settled",
+      hypothesisId: error ? "E" : "D",
+      data: {
+        userName,
+        hasData: Boolean(data?.user),
+        hasError: Boolean(error),
+        errorMessage: error?.message,
+        networkStatus,
+      },
+    });
+    // #endregion
+  }, [loading, error, data, userName, networkStatus]);
 
   if (loading) return <Loading />;
 
   if (error) {
+    const displayMessage = getApolloGitHubErrorMessage(error);
     return (
       <AnimatedSection>
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-center">
-          <p className="mb-4 text-destructive">{error.message}</p>
+          <p className="mb-4 text-destructive">{displayMessage}</p>
           <p className="text-sm text-muted-foreground">
             Check your connection or try again later.
           </p>
