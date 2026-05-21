@@ -194,7 +194,7 @@ app/layout.tsx
 1. Apollo sends standard GraphQL POST body.
 2. Route parses JSON; `isAllowedGraphQLBody()` ensures `user(login:` query + `variables.login`.
 3. `fetchGitHubGraphQLUpstream()` calls GitHub with `GITHUB_TOKEN` (or legacy `NEXT_PUBLIC_GITHUB_TOKEN` fallback in dev).
-4. On upstream 5xx → retries; then **smaller** `repositories(first:)` (100 → 50 → 25) — node limit is per-page nested data, not `totalCount`.
+4. On upstream 5xx/timeout → try `repositories(first:)` **50 → 25 → 100** (one 9s attempt each; fits Vercel `maxDuration: 60`).
 5. Still failing after fallbacks → HTTP **200** with `{ errors: [{ extensions: { code: GITHUB_UPSTREAM_ERROR, status: 502 } }] }` (browser shows 200; GitHub upstream was 502).
 6. Rate-limit headers forwarded when present.
 

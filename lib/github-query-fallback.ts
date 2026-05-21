@@ -1,13 +1,14 @@
 /**
  * Shrinks GET_USER repo page size when GitHub returns 502/503/504.
- * Total repo count (263 vs 187) is not the limit — nested nodes per page are.
+ * Order: 50 → 25 → 100 — heavy profiles (e.g. many languages/topics per repo) often
+ * fail at 100; 50 stays under GitHub node limits and Vercel function duration.
  * @see https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api
  */
 
 import type { GitHubGraphQLRequestBody } from "@/types/github-api";
 
-/** Try full query first, then smaller pages to stay under GitHub node/time limits. */
-export const REPO_PAGE_FALLBACK_SIZES = [100, 50, 25] as const;
+/** Smaller pages first to avoid Vercel timeout when 100 repeatedly 502s. */
+export const REPO_PAGE_FALLBACK_SIZES = [50, 25, 100] as const;
 
 export type RepoPageSize = (typeof REPO_PAGE_FALLBACK_SIZES)[number];
 

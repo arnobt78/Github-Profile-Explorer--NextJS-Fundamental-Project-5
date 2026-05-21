@@ -18,6 +18,8 @@ import { reportGitHubApiError } from "@/lib/report-github-api-error";
 import type { GitHubGraphQLRequestBody } from "@/types/github-api";
 
 export const runtime = "nodejs";
+/** Allow full fallback chain (50 → 25 → 100 × 9s) on Vercel; avoids platform HTTP 500. */
+export const maxDuration = 60;
 
 function jsonResponse(
   body: unknown,

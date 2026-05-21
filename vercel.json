@@ -1,5 +1,10 @@
 {
   "framework": "nextjs",
+  "functions": {
+    "app/api/github/graphql/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

@@ -1,6 +1,6 @@
 /**
  * Server-only GitHub GraphQL client used by `/api/github/graphql`.
- * Retries transient 502/503/504; falls back to smaller `repositories(first:)` pages.
+ * Falls back through smaller `repositories(first:)` pages; bounded time for Vercel limits.
  */
 
 import type { GitHubGraphQLUpstreamResult } from "@/types/github-api";
@@ -14,7 +14,8 @@ import {
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 const RETRYABLE_STATUS = new Set([502, 503, 504]);
-const UPSTREAM_TIMEOUT_MS = 25_000;
+/** GitHub often 502 near ~10s; keep each attempt under Vercel hobby limit. */
+const UPSTREAM_TIMEOUT_MS = 9_000;
 
 /** Prefer server-only token; fall back for local setups still using NEXT_PUBLIC_*. */
 export function getGitHubServerToken(): string | undefined {
@@ -42,10 +43,6 @@ export function isAllowedGraphQLBody(body: GitHubGraphQLRequestBody): boolean {
   );
 }
 
-function backoffMs(attemptIndex: number): number {
-  return 400 * 2 ** attemptIndex;
-}
-
 function pickForwardHeaders(res: Response): Record<string, string> {
   const keys = [
     "x-ratelimit-limit",
@@ -66,24 +63,21 @@ type UpstreamResultWithMeta = GitHubGraphQLUpstreamResult & {
   repoPageSize?: RepoPageSize;
 };
 
-/**
- * Single page-size attempt: retries only on gateway HTTP codes.
- */
-async function fetchGitHubGraphQLAttempt(
-  body: string,
-  maxAttempts: number
+/** One upstream POST; timeouts count as retryable gateway failures. */
+async function fetchGitHubGraphQLOnce(
+  body: string
 ): Promise<GitHubGraphQLUpstreamResult> {
   const token = getGitHubServerToken();
   const login = parseGraphQLLogin(body);
-  let lastStatus = 502;
-  let lastText = "";
-  let lastHeaders: Record<string, string> = {};
+  const emptyFail = (): GitHubGraphQLUpstreamResult => ({
+    status: 504,
+    text: "",
+    headers: {},
+    attempts: 1,
+    login,
+  });
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (attempt > 0) {
-      await new Promise((resolve) => setTimeout(resolve, backoffMs(attempt - 1)));
-    }
-
+  try {
     const response = await fetch(GITHUB_GRAPHQL_URL, {
       method: "POST",
       headers: {
@@ -95,63 +89,40 @@ async function fetchGitHubGraphQLAttempt(
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
 
-    lastStatus = response.status;
-    lastText = await response.text();
-    lastHeaders = pickForwardHeaders(response);
+    const lastStatus = response.status;
+    const lastText = await response.text();
+    const lastHeaders = pickForwardHeaders(response);
 
-    if (response.ok && isSuccessfulUserGraphQLResponse(lastText)) {
-      return {
-        status: lastStatus,
-        text: lastText,
-        headers: lastHeaders,
-        attempts: attempt + 1,
-        login,
-      };
-    }
-
-    if (response.ok) {
-      return {
-        status: lastStatus,
-        text: lastText,
-        headers: lastHeaders,
-        attempts: attempt + 1,
-        login,
-      };
-    }
-
-    if (!RETRYABLE_STATUS.has(response.status)) {
-      return {
-        status: lastStatus,
-        text: lastText,
-        headers: lastHeaders,
-        attempts: attempt + 1,
-        login,
-      };
-    }
+    return {
+      status: lastStatus,
+      text: lastText,
+      headers: lastHeaders,
+      attempts: 1,
+      login,
+    };
+  } catch {
+    return emptyFail();
   }
-
-  return {
-    status: lastStatus,
-    text: lastText,
-    headers: lastHeaders,
-    attempts: maxAttempts,
-    login,
-  };
 }
 
 /**
- * POST to GitHub with gateway retries, then smaller `repositories(first:)` on 502/503/504.
- * Fixes profiles where 100 repos × languages × topics exceeds GitHub node/time limits.
+ * Tries 50 → 25 → 100 repo pages (one 9s attempt each) until data.user is returned.
+ * Prevents Vercel FUNCTION_INVOCATION_TIMEOUT (generic HTTP 500) from long 100-only retries.
  */
 export async function fetchGitHubGraphQLUpstream(
   body: string
 ): Promise<UpstreamResultWithMeta> {
-  let lastResult: GitHubGraphQLUpstreamResult | null = null;
+  let lastResult: GitHubGraphQLUpstreamResult = {
+    status: 502,
+    text: "",
+    headers: {},
+    attempts: 0,
+    login: parseGraphQLLogin(body),
+  };
 
   for (const pageSize of REPO_PAGE_FALLBACK_SIZES) {
     const sizedBody = withRepoPageSize(body, pageSize);
-    const maxAttempts = pageSize === 100 ? 2 : 1;
-    const result = await fetchGitHubGraphQLAttempt(sizedBody, maxAttempts);
+    const result = await fetchGitHubGraphQLOnce(sizedBody);
     lastResult = result;
 
     if (isSuccessfulUserGraphQLResponse(result.text)) {
@@ -163,5 +134,5 @@ export async function fetchGitHubGraphQLUpstream(
     }
   }
 
-  return { ...lastResult!, repoPageSize: REPO_PAGE_FALLBACK_SIZES.at(-1) };
+  return { ...lastResult, repoPageSize: REPO_PAGE_FALLBACK_SIZES.at(-1) };
 }
