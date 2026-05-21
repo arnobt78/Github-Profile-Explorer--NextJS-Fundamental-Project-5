@@ -39,4 +39,6 @@ export type GitHubGraphQLUpstreamResult = {
   headers: Record<string, string>;
   attempts: number;
   login?: string;
+  /** Set when a smaller `repositories(first:)` page succeeded after gateway errors. */
+  repoPageSize?: number;
 };

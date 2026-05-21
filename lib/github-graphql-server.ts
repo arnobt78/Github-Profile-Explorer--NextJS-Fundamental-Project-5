@@ -1,13 +1,19 @@
 /**
  * Server-only GitHub GraphQL client used by `/api/github/graphql`.
- * Retries transient 502/503/504 from GitHub; token never sent to the browser.
+ * Retries transient 502/503/504; falls back to smaller `repositories(first:)` pages.
  */
 
+import type { GitHubGraphQLUpstreamResult } from "@/types/github-api";
 import type { GitHubGraphQLRequestBody } from "@/types/github-api";
+import {
+  isSuccessfulUserGraphQLResponse,
+  REPO_PAGE_FALLBACK_SIZES,
+  withRepoPageSize,
+  type RepoPageSize,
+} from "@/lib/github-query-fallback";
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 const RETRYABLE_STATUS = new Set([502, 503, 504]);
-const MAX_ATTEMPTS = 3;
 const UPSTREAM_TIMEOUT_MS = 25_000;
 
 /** Prefer server-only token; fall back for local setups still using NEXT_PUBLIC_*. */
@@ -56,20 +62,24 @@ function pickForwardHeaders(res: Response): Record<string, string> {
   return out;
 }
 
+type UpstreamResultWithMeta = GitHubGraphQLUpstreamResult & {
+  repoPageSize?: RepoPageSize;
+};
+
 /**
- * POST to GitHub GraphQL with retries on gateway errors.
- * Heavy users (many repos) can exceed ~10s and trigger 502 without retries.
+ * Single page-size attempt: retries only on gateway HTTP codes.
  */
-export async function fetchGitHubGraphQLUpstream(
-  body: string
-): Promise<import("@/types/github-api").GitHubGraphQLUpstreamResult> {
+async function fetchGitHubGraphQLAttempt(
+  body: string,
+  maxAttempts: number
+): Promise<GitHubGraphQLUpstreamResult> {
   const token = getGitHubServerToken();
   const login = parseGraphQLLogin(body);
   let lastStatus = 502;
   let lastText = "";
   let lastHeaders: Record<string, string> = {};
 
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) {
       await new Promise((resolve) => setTimeout(resolve, backoffMs(attempt - 1)));
     }
@@ -89,7 +99,27 @@ export async function fetchGitHubGraphQLUpstream(
     lastText = await response.text();
     lastHeaders = pickForwardHeaders(response);
 
-    if (response.ok || !RETRYABLE_STATUS.has(response.status)) {
+    if (response.ok && isSuccessfulUserGraphQLResponse(lastText)) {
+      return {
+        status: lastStatus,
+        text: lastText,
+        headers: lastHeaders,
+        attempts: attempt + 1,
+        login,
+      };
+    }
+
+    if (response.ok) {
+      return {
+        status: lastStatus,
+        text: lastText,
+        headers: lastHeaders,
+        attempts: attempt + 1,
+        login,
+      };
+    }
+
+    if (!RETRYABLE_STATUS.has(response.status)) {
       return {
         status: lastStatus,
         text: lastText,
@@ -104,7 +134,34 @@ export async function fetchGitHubGraphQLUpstream(
     status: lastStatus,
     text: lastText,
     headers: lastHeaders,
-    attempts: MAX_ATTEMPTS,
+    attempts: maxAttempts,
     login,
   };
+}
+
+/**
+ * POST to GitHub with gateway retries, then smaller `repositories(first:)` on 502/503/504.
+ * Fixes profiles where 100 repos × languages × topics exceeds GitHub node/time limits.
+ */
+export async function fetchGitHubGraphQLUpstream(
+  body: string
+): Promise<UpstreamResultWithMeta> {
+  let lastResult: GitHubGraphQLUpstreamResult | null = null;
+
+  for (const pageSize of REPO_PAGE_FALLBACK_SIZES) {
+    const sizedBody = withRepoPageSize(body, pageSize);
+    const maxAttempts = pageSize === 100 ? 2 : 1;
+    const result = await fetchGitHubGraphQLAttempt(sizedBody, maxAttempts);
+    lastResult = result;
+
+    if (isSuccessfulUserGraphQLResponse(result.text)) {
+      return { ...result, repoPageSize: pageSize };
+    }
+
+    if (!RETRYABLE_STATUS.has(result.status)) {
+      return { ...result, repoPageSize: pageSize };
+    }
+  }
+
+  return { ...lastResult!, repoPageSize: REPO_PAGE_FALLBACK_SIZES.at(-1) };
 }

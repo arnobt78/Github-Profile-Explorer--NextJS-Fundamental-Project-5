@@ -83,7 +83,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         status: upstream.status,
         attempts: upstream.attempts,
         githubRequestId: upstream.headers["x-github-request-id"],
-        message: `GitHub upstream HTTP ${upstream.status} after ${upstream.attempts} attempt(s)`,
+        message: `GitHub upstream HTTP ${upstream.status} after ${upstream.attempts} attempt(s) (repo page tried through ${upstream.repoPageSize ?? 100})`,
       });
 
       const payload = buildProxyGraphQLError(
